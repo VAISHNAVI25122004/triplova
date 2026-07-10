@@ -26,9 +26,9 @@ const SubCategoryDetail = () => {
                 const res = await childCategoryAPI.getAll();
                 if (res && res.status === 'success' && Array.isArray(res.data)) {
                     const filtered = res.data.filter(child => 
-                        (child.sub_name || '').toLowerCase() === subCategoryName?.toLowerCase()
+                        (child.subcategory_name || child.sub_name || '').toLowerCase() === subCategoryName?.toLowerCase()
                     );
-                    setChildCategories(filtered.length > 0 ? filtered : res.data); // Fallback for demo
+                    setChildCategories(filtered.length > 0 ? filtered : res.data);
                 } else {
                     setChildCategories([]);
                 }
@@ -92,9 +92,9 @@ const SubCategoryDetail = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                     {childCategories.map((child, index) => (
                                         <Link 
-                                            key={`${child.id || child.child_id}-${index}`}
-                                            to={`/destinations/${continentName}/${categoryName}/${subCategoryName}/${(child.name || child.child_name || 'undefined').toLowerCase()}`}
-                                            className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group group border border-gray-100 flex flex-col h-full transform hover:-translate-y-1"
+                                            key={`${child.id || child.childCategory_id || index}`}
+                                            to={`/destinations/${continentName}/${categoryName}/${subCategoryName}/${(child.name || child.childCategory_name || 'undefined').toLowerCase()}`}
+                                            className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group border border-gray-100 flex flex-col h-full transform hover:-translate-y-1"
                                         >
                                             <div className="relative h-56 overflow-hidden">
                                                 <img 
@@ -104,8 +104,8 @@ const SubCategoryDetail = () => {
                                                 />
                                             </div>
                                             <div className="p-6">
-                                                <h3 className="text-xl font-bold text-gray-900 mb-2 capitalize">{child.name || child.child_name}</h3>
-                                                <p className="text-gray-500 text-sm mb-4 line-clamp-2">Explore the finest selections of {child.name || child.child_name}.</p>
+                                                <h3 className="text-xl font-bold text-gray-900 mb-2 capitalize">{child.name || child.childCategory_name}</h3>
+                                                <p className="text-gray-500 text-sm mb-4 line-clamp-2">{child.description || child.childCategory_description || 'Explore the finest selections.'}</p>
                                                 <div className="mt-auto flex items-center justify-end pt-4 border-t border-gray-100">
                                                     <span className="flex items-center gap-1 text-sm font-bold text-primary-600 group-hover:text-primary-700 group-hover:translate-x-1 transition-all">
                                                         Explore Packages <ArrowRight className="w-4 h-4" />

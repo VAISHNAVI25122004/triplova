@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { categoryAPI, contactAPI, packageAPI, childCategoryAPI, userAPI } from '../services/api';
+import { categoryAPI, contactAPI, packageAPI, childCategoryAPI, userAPI, continentsAPI, subCategoryAPI } from '../services/api';
 import {
     Users, BarChart3, Map, LogOut, Search, PlusCircle, Settings, Bell,
     Globe2, Ticket, TrendingUp, ArrowUpRight, Plane, Package, DollarSign,
@@ -42,6 +42,9 @@ const AdminPanel = () => {
     const [actionModal, setActionModal] = useState({ isOpen: false, type: null, user: null });
     const [confirmText, setConfirmText] = useState("");
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [continentsList, setContinentsList] = useState([]);
+    const [categoriesList, setCategoriesList] = useState([]);
+    const [subCategoriesList, setSubCategoriesList] = useState([]);
 
     useEffect(() => {
         let isMounted = true;
@@ -50,27 +53,50 @@ const AdminPanel = () => {
             Promise.all([
                 categoryAPI.getAll().catch(err => ({ status: 'error', data: [] })),
                 packageAPI.getAll().catch(err => ({ status: 'error', data: [] })),
-                childCategoryAPI.getAll().catch(err => ({ status: 'error', data: [] }))
+                childCategoryAPI.getAll().catch(err => ({ status: 'error', data: [] })),
+                continentsAPI.getAll().catch(err => ({ status: 'error', data: [] })),
+                subCategoryAPI.getAll().catch(err => ({ status: 'error', data: [] }))
             ])
-                .then(([categoryData, localPackagesData, childCategoryData]) => {
+                .then(([categoryData, localPackagesData, childCategoryData, contData, subCatData]) => {
                     if (!isMounted) return;
+                    
+                    if (contData && contData.status === 'success' && Array.isArray(contData.data)) {
+                        setContinentsList(contData.data);
+                    }
+                    if (categoryData && categoryData.status === 'success' && Array.isArray(categoryData.data)) {
+                        setCategoriesList(categoryData.data);
+                    }
+                    if (subCatData && subCatData.status === 'success' && Array.isArray(subCatData.data)) {
+                        setSubCategoriesList(subCatData.data);
+                    }
                     const defaultLatest = [
-                        { id: 'default-new-1', name: 'Sapphire Beach Resort', destination: 'Maldives', price: '$1,299', image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=600&auto=format&fit=crop&q=60' },
-                        { id: 'default-new-2', name: 'Alpine Mountain Gateway', destination: 'Switzerland', price: '$2,150', image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=600&auto=format&fit=crop&q=60' },
-                        { id: 'default-new-3', name: 'Desert Safari Expedition', destination: 'Dubai', price: '$899', image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=600&auto=format&fit=crop&q=60' }
+                        { id: 'default-new-1', name: 'Sapphire Beach Resort', destination: 'Maldives', price: '$1,299', image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=600&auto=format&fit=crop&q=60', level: 'New Arrival' },
+                        { id: 'default-new-2', name: 'Alpine Mountain Gateway', destination: 'Switzerland', price: '$2,150', image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=600&auto=format&fit=crop&q=60', level: 'New Arrival' },
+                        { id: 'default-new-3', name: 'Desert Safari Expedition', destination: 'Dubai', price: '$899', image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=600&auto=format&fit=crop&q=60', level: 'New Arrival' }
                     ];
-                    let combined = [...initialPackages, ...defaultLatest];
+
+                    let combined = [
+                        ...initialPackages.map(p => ({ ...p, level: 'Premium' })),
+                        ...defaultLatest
+                    ];
+
                     const deletedIds = JSON.parse(localStorage.getItem('triplova_deleted_category_ids') || '[]');
                     const deletedChildIds = JSON.parse(localStorage.getItem('triplova_deleted_child_category_ids') || '[]');
 
+                    if (contData && contData.status === 'success' && Array.isArray(contData.data)) {
+                        combined = [...combined, ...contData.data.map(c => ({ ...c, level: 'Continent' }))];
+                    }
                     if (categoryData && categoryData.status === 'success' && Array.isArray(categoryData.data)) {
-                        combined = [...categoryData.data.filter(cat => !deletedIds.includes(cat.category_id))];
+                        combined = [...combined, ...categoryData.data.filter(cat => !deletedIds.includes(cat.category_id)).map(c => ({ ...c, level: 'Category' }))];
+                    }
+                    if (subCatData && subCatData.status === 'success' && Array.isArray(subCatData.data)) {
+                        combined = [...combined, ...subCatData.data.map(s => ({ ...s, level: 'Sub Category' }))];
                     }
                     if (childCategoryData && childCategoryData.status === 'success' && Array.isArray(childCategoryData.data)) {
-                        combined = [...combined, ...childCategoryData.data.filter(child => !deletedChildIds.includes(child.childCategory_id))];
+                        combined = [...combined, ...childCategoryData.data.filter(child => !deletedChildIds.includes(child.childCategory_id)).map(c => ({ ...c, level: 'Child Category' }))];
                     }
                     if (localPackagesData && localPackagesData.status === 'success' && Array.isArray(localPackagesData.data)) {
-                        combined = [...combined, ...localPackagesData.data];
+                        combined = [...combined, ...localPackagesData.data.map(p => ({ ...p, level: 'Package' }))];
                     }
                     setPackages(combined.reverse());
                 })
@@ -189,24 +215,35 @@ const AdminPanel = () => {
             Promise.all([
                 categoryAPI.getAll().catch(err => ({ status: 'error', data: [] })),
                 packageAPI.getAll().catch(err => ({ status: 'error', data: [] })),
-                childCategoryAPI.getAll().catch(err => ({ status: 'error', data: [] }))
-            ]).then(([catData, packData, childData]) => {
+                childCategoryAPI.getAll().catch(err => ({ status: 'error', data: [] })),
+                subCategoryAPI.getAll().catch(err => ({ status: 'error', data: [] })),
+                continentsAPI.getAll().catch(err => ({ status: 'error', data: [] }))
+            ]).then(([catData, packData, childData, subCatData, contData]) => {
                 const deletedIds = JSON.parse(localStorage.getItem('triplova_deleted_category_ids') || '[]');
                 const deletedChildIds = JSON.parse(localStorage.getItem('triplova_deleted_child_category_ids') || '[]');
                 const defaultLatest = [
-                    { id: 'default-new-1', name: 'Sapphire Beach Resort', destination: 'Maldives', price: '$1,299', image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=600&auto=format&fit=crop&q=60' },
-                    { id: 'default-new-2', name: 'Alpine Mountain Gateway', destination: 'Switzerland', price: '$2,150', image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=600&auto=format&fit=crop&q=60' },
-                    { id: 'default-new-3', name: 'Desert Safari Expedition', destination: 'Dubai', price: '$899', image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=600&auto=format&fit=crop&q=60' }
+                    { id: 'default-new-1', name: 'Sapphire Beach Resort', destination: 'Maldives', price: '$1,299', image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=600&auto=format&fit=crop&q=60', level: 'New Arrival' },
+                    { id: 'default-new-2', name: 'Alpine Mountain Gateway', destination: 'Switzerland', price: '$2,150', image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=600&auto=format&fit=crop&q=60', level: 'New Arrival' },
+                    { id: 'default-new-3', name: 'Desert Safari Expedition', destination: 'Dubai', price: '$899', image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=600&auto=format&fit=crop&q=60', level: 'New Arrival' }
                 ];
-                let combined = [...initialPackages, ...defaultLatest];
+                let combined = [
+                    ...initialPackages.map(p => ({ ...p, level: 'Premium' })),
+                    ...defaultLatest
+                ];
+                if (contData?.status === 'success' && Array.isArray(contData.data)) {
+                    combined = [...combined, ...contData.data.map(c => ({ ...c, level: 'Continent' }))];
+                }
                 if (catData?.status === 'success' && Array.isArray(catData.data)) {
-                    combined = [...catData.data.filter(cat => !deletedIds.includes(cat.category_id))];
+                    combined = [...combined, ...catData.data.filter(cat => !deletedIds.includes(cat.category_id)).map(c => ({ ...c, level: 'Category' }))];
+                }
+                if (subCatData?.status === 'success' && Array.isArray(subCatData.data)) {
+                    combined = [...combined, ...subCatData.data.map(s => ({ ...s, level: 'Sub Category' }))];
                 }
                 if (childData?.status === 'success' && Array.isArray(childData.data)) {
-                    combined = [...combined, ...childData.data.filter(child => !deletedChildIds.includes(child.childCategory_id))];
+                    combined = [...combined, ...childData.data.filter(child => !deletedChildIds.includes(child.childCategory_id)).map(c => ({ ...c, level: 'Child Category' }))];
                 }
                 if (packData?.status === 'success' && Array.isArray(packData.data)) {
-                    combined = [...combined, ...packData.data];
+                    combined = [...combined, ...packData.data.map(p => ({ ...p, level: 'Package' }))];
                 }
                 setPackages(combined.reverse());
             });
@@ -264,19 +301,34 @@ const AdminPanel = () => {
             Promise.all([
                 categoryAPI.getAll().catch(err => ({ status: 'error', data: [] })),
                 packageAPI.getAll().catch(err => ({ status: 'error', data: [] })),
-                childCategoryAPI.getAll().catch(err => ({ status: 'error', data: [] }))
-            ]).then(([catData, packData, childData]) => {
+                childCategoryAPI.getAll().catch(err => ({ status: 'error', data: [] })),
+                subCategoryAPI.getAll().catch(err => ({ status: 'error', data: [] })),
+                continentsAPI.getAll().catch(err => ({ status: 'error', data: [] }))
+            ]).then(([catData, packData, childData, subCatData, contData]) => {
                 const deletedIds = JSON.parse(localStorage.getItem('triplova_deleted_category_ids') || '[]');
                 const deletedChildIds = JSON.parse(localStorage.getItem('triplova_deleted_child_category_ids') || '[]');
-                let combined = [];
+                let combined = [
+                    ...initialPackages.map(p => ({ ...p, level: 'Premium' })),
+                    ...[
+                        { id: 'default-new-1', name: 'Sapphire Beach Resort', destination: 'Maldives', price: '$1,299', image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=600&auto=format&fit=crop&q=60', level: 'New Arrival' },
+                        { id: 'default-new-2', name: 'Alpine Mountain Gateway', destination: 'Switzerland', price: '$2,150', image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=600&auto=format&fit=crop&q=60', level: 'New Arrival' },
+                        { id: 'default-new-3', name: 'Desert Safari Expedition', destination: 'Dubai', price: '$899', image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=600&auto=format&fit=crop&q=60', level: 'New Arrival' }
+                    ]
+                ];
+                if (contData?.status === 'success' && Array.isArray(contData.data)) {
+                    combined = [...combined, ...contData.data.map(c => ({ ...c, level: 'Continent' }))];
+                }
                 if (catData?.status === 'success' && Array.isArray(catData.data)) {
-                    combined = [...catData.data.filter(cat => !deletedIds.includes(cat.category_id))];
+                    combined = [...combined, ...catData.data.filter(cat => !deletedIds.includes(cat.category_id)).map(c => ({ ...c, level: 'Category' }))];
+                }
+                if (subCatData?.status === 'success' && Array.isArray(subCatData.data)) {
+                    combined = [...combined, ...subCatData.data.map(s => ({ ...s, level: 'Sub Category' }))];
                 }
                 if (childData?.status === 'success' && Array.isArray(childData.data)) {
-                    combined = [...combined, ...childData.data.filter(child => !deletedChildIds.includes(child.childCategory_id))];
+                    combined = [...combined, ...childData.data.filter(child => !deletedChildIds.includes(child.childCategory_id)).map(c => ({ ...c, level: 'Child Category' }))];
                 }
                 if (packData?.status === 'success' && Array.isArray(packData.data)) {
-                    combined = [...combined, ...packData.data];
+                    combined = [...combined, ...packData.data.map(p => ({ ...p, level: 'Package' }))];
                 }
                 setPackages(combined.reverse());
             });
@@ -771,17 +823,24 @@ const AdminPanel = () => {
                                                 </div>
                                             </div>
                                             <div className="p-5">
-                                                <h4 className="text-white font-bold text-base mb-1 capitalize">{pkg.category_name || pkg.childCategory_name || pkg.name}</h4>
+                                                <h4 className="text-white font-bold text-base mb-1 capitalize">
+                                                    <span className="text-cyan-400 text-xs font-mono mr-2 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                                                        [ID: {pkg.id || pkg.category_id || pkg.childCategory_id || pkg.subCategory_id || 'N/A'}]
+                                                    </span>
+                                                    {pkg.category_name || pkg.subCategory_name || pkg.childCategory_name || pkg.name}
+                                                </h4>
 
                                                 <div className="text-slate-400 text-sm mb-3 min-h-[40px] line-clamp-2">
-                                                    {pkg.category_description || pkg.childCategory_description || 'No description available for this category.'}
+                                                    {pkg.description || pkg.category_description || pkg.childCategory_description || 'No description available for this entry.'}
                                                 </div>
 
                                                 <div className="flex items-center gap-3 text-slate-400 text-sm mb-3 border-t border-white/5 pt-3">
                                                     <span className="flex items-center gap-1"><Map className="w-3 h-3" /> {pkg.destination || 'Global'}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-slate-500 text-xs">{(pkg.subcategories?.length || pkg.bookings || 0).toLocaleString()} subcategories</span>
+                                                    <span className="text-slate-500 text-xs">
+                                                        {pkg.level || (pkg.childCategory_id ? 'Child Category' : (pkg.subCategory_id || pkg.id && !pkg.category_id ? 'Sub Category' : (pkg.category_id ? 'Category' : 'Package')))}
+                                                    </span>
                                                     <span className={`text-xs font-bold ${(pkg.trend || 'New') === 'New' ? 'text-blue-400' : 'text-green-400'}`}>
                                                         {pkg.trend || 'New'}
                                                     </span>
@@ -904,65 +963,142 @@ const AdminPanel = () => {
 
             {/* ======= ADD PACKAGE MODAL ======= */}
             {showAddPackage && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up">
-                    <div className="w-full max-w-lg mx-4 rounded-2xl border border-white/10 p-8 shadow-2xl"
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up">
+                    <div className="w-full max-w-lg mx-4 rounded-2xl border border-white/10 p-8 shadow-2xl overflow-y-auto max-h-[90vh]"
                         style={{ background: 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)' }}
                     >
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                 <Package className="w-5 h-5 text-cyan-400" />
-                                Add New Package
+                                Add New Entry
                             </h3>
                             <button onClick={() => setShowAddPackage(false)} className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleAddPackage} className="space-y-4">
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            let level = e.target.elements.level?.value || 'package';
+                            const formData = new FormData();
+                            const appendIfObj = (key, val) => { if (val) formData.append(key, val); };
+                            
+                            if (level === 'package') {
+                                handleAddPackage(e);
+                                return;
+                            } else if (level === 'category') {
+                                appendIfObj('continent_id', newPackage.continent_id);
+                                appendIfObj('category_name', newPackage.name);
+                                appendIfObj('category_description', newPackage.destination); // Using dest field as description
+                                appendIfObj('category_image', newPackage.image);
+                                appendIfObj('status', '1');
+                                categoryAPI.create(formData).then(() => {
+                                    alert("Category created!"); setShowAddPackage(false); window.location.reload();
+                                }).catch(console.error);
+                            } else if (level === 'subCategory') {
+                                appendIfObj('category_id', newPackage.category_id);
+                                appendIfObj('name', newPackage.name);
+                                appendIfObj('description', newPackage.destination);
+                                appendIfObj('image', newPackage.image);
+                                appendIfObj('status', '1');
+                                subCategoryAPI.create(formData).then((res) => {
+                                    if (res.status === 'success') {
+                                        alert("Sub Category created!"); setShowAddPackage(false); window.location.reload();
+                                    } else {
+                                        alert("Error: " + (res.message || "Failed to create sub category"));
+                                    }
+                                }).catch(console.error);
+                            } else if (level === 'childCategory') {
+                                appendIfObj('category_id', newPackage.category_id);
+                                appendIfObj('subcategory_id', newPackage.subCategory_id);
+                                appendIfObj('name', newPackage.name);
+                                appendIfObj('description', newPackage.destination);
+                                appendIfObj('price', newPackage.price);
+                                appendIfObj('duration', newPackage.duration);
+                                appendIfObj('image', newPackage.image);
+                                appendIfObj('meta_title', newPackage.name);
+                                appendIfObj('meta_keyword', newPackage.name);
+                                appendIfObj('meta_description', newPackage.destination);
+                                appendIfObj('status', '1');
+                                childCategoryAPI.create(formData).then((res) => {
+                                    if (res.status === 'success') {
+                                        alert("Child Category created!"); setShowAddPackage(false); window.location.reload();
+                                    } else {
+                                        alert("Error: " + (res.message || "Failed to create child category"));
+                                    }
+                                }).catch(console.error);
+                            }
+                        }} className="space-y-4">
+                            
                             <div>
-                                <label className="text-slate-400 text-sm mb-1.5 block">Package Name</label>
+                                <label className="text-slate-400 text-sm mb-1.5 block">Entry Type</label>
+                                <select 
+                                    name="level"
+                                    onChange={(e) => setNewPackage({ ...newPackage, level: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white outline-none focus:border-cyan-500"
+                                >
+                                    <option value="package" className="text-slate-900">Standalone Package</option>
+                                    <option value="category" className="text-slate-900">Category (eg. Destination Country)</option>
+                                    <option value="subCategory" className="text-slate-900">Sub Category (eg. City/Region)</option>
+                                    <option value="childCategory" className="text-slate-900">Child Category (eg. Specific Resort/Theme)</option>
+                                </select>
+                            </div>
+
+                            {newPackage.level && newPackage.level !== 'package' && (
+                                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4 text-blue-400 text-xs">
+                                   Note: When creating categories, they follow a hierarchy (Continent {'>'} Category {'>'} SubCategory {'>'} ChildCategory). The frontend will automatically route users along this path based on these divisions.
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-slate-400 text-sm mb-1.5 block">Name</label>
                                 <input
                                     type="text"
                                     value={newPackage.name}
                                     onChange={(e) => setNewPackage({ ...newPackage, name: e.target.value })}
-                                    placeholder="e.g. Santorini Dream"
-                                    className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all placeholder-slate-600"
+                                    placeholder={newPackage.level === 'package' ? "e.g. Santorini Dream" : "e.g. Europe or Honeymoon Special"}
+                                    className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm outline-none focus:border-cyan-500/50"
                                     required
                                 />
                             </div>
+                            
+                            {newPackage.level === 'category' && (
+                                <div>
+                                    <label className="text-slate-400 text-sm mb-1.5 block">Parent ID (Continent)</label>
+                                    <select value={newPackage.continent_id || ''} onChange={(e) => setNewPackage({ ...newPackage, continent_id: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white outline-none focus:border-cyan-500" required>
+                                        <option value="" disabled className="text-slate-900">-- Select Continent --</option>
+                                        {continentsList.map(c => <option key={c.id} value={c.id} className="text-slate-900">[ID: {c.id}] {c.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            {(newPackage.level === 'subCategory' || newPackage.level === 'childCategory') && (
+                                <div>
+                                    <label className="text-slate-400 text-sm mb-1.5 block">Parent ID (Category)</label>
+                                    <select value={newPackage.category_id || ''} onChange={(e) => setNewPackage({ ...newPackage, category_id: e.target.value, subCategory_id: '' })} className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white outline-none focus:border-cyan-500" required>
+                                        <option value="" disabled className="text-slate-900">-- Select Category --</option>
+                                        {categoriesList.map(c => <option key={c.category_id} value={c.category_id} className="text-slate-900">[ID: {c.category_id}] {c.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            {newPackage.level === 'childCategory' && (
+                                <div>
+                                    <label className="text-slate-400 text-sm mb-1.5 block">Parent ID (SubCategory)</label>
+                                    <select value={newPackage.subCategory_id || ''} onChange={(e) => setNewPackage({ ...newPackage, subCategory_id: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white outline-none focus:border-cyan-500" required disabled={!newPackage.category_id}>
+                                        <option value="" disabled className="text-slate-900">-- Select SubCategory --</option>
+                                        {subCategoriesList.filter((sc) => sc.category_id == newPackage.category_id).map(sc => <option key={sc.id} value={sc.id} className="text-slate-900">[ID: {sc.id}] {sc.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-slate-400 text-sm mb-1.5 block">Destination</label>
+                                    <label className="text-slate-400 text-sm mb-1.5 block">{newPackage.level === 'package' ? "Destination" : "Description"}</label>
                                     <input
                                         type="text"
                                         value={newPackage.destination}
                                         onChange={(e) => setNewPackage({ ...newPackage, destination: e.target.value })}
-                                        placeholder="e.g. Greece"
-                                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all placeholder-slate-600"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-slate-400 text-sm mb-1.5 block">Price</label>
-                                    <input
-                                        type="text"
-                                        value={newPackage.price}
-                                        onChange={(e) => setNewPackage({ ...newPackage, price: e.target.value })}
-                                        placeholder="e.g. $2,499"
-                                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all placeholder-slate-600"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-slate-400 text-sm mb-1.5 block">Duration</label>
-                                    <input
-                                        type="text"
-                                        value={newPackage.duration}
-                                        onChange={(e) => setNewPackage({ ...newPackage, duration: e.target.value })}
-                                        placeholder="e.g. 10 Days"
-                                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all placeholder-slate-600"
+                                        placeholder={newPackage.level === 'package' ? "e.g. Greece" : "Short description"}
+                                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm outline-none focus:border-cyan-500/50"
                                         required
                                     />
                                 </div>
@@ -972,11 +1108,38 @@ const AdminPanel = () => {
                                         type="file"
                                         accept="image/*"
                                         onChange={(e) => setNewPackage({ ...newPackage, image: e.target.files[0] })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-slate-300 text-sm outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/10 file:text-cyan-400 hover:file:bg-cyan-500/20 cursor-pointer"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-slate-300 text-sm outline-none file:bg-cyan-500/10 file:text-cyan-400"
                                         required
                                     />
                                 </div>
                             </div>
+
+                            {(!newPackage.level || newPackage.level === 'package' || newPackage.level === 'childCategory') && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-slate-400 text-sm mb-1.5 block">Price</label>
+                                        <input
+                                            type="text"
+                                            value={newPackage.price}
+                                            onChange={(e) => setNewPackage({ ...newPackage, price: e.target.value })}
+                                            placeholder="e.g. $2,499"
+                                            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm outline-none focus:border-cyan-500/50"
+                                            required={newPackage.level === 'package' || !newPackage.level}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-slate-400 text-sm mb-1.5 block">Duration</label>
+                                        <input
+                                            type="text"
+                                            value={newPackage.duration}
+                                            onChange={(e) => setNewPackage({ ...newPackage, duration: e.target.value })}
+                                            placeholder="e.g. 10 Days"
+                                            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm outline-none focus:border-cyan-500/50"
+                                            required={newPackage.level === 'package' || !newPackage.level}
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex gap-3 pt-4">
                                 <button
@@ -988,10 +1151,10 @@ const AdminPanel = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-medium shadow-lg shadow-cyan-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-medium shadow-lg hover:scale-[1.02] flex items-center justify-center gap-2"
                                 >
                                     <Check className="w-4 h-4" />
-                                    Add Package
+                                    Add {newPackage.level === 'package' ? 'Package' : 'Category'}
                                 </button>
                             </div>
                         </form>

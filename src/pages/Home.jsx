@@ -54,10 +54,10 @@ const Home = () => {
             return;
         }
 
-        const name = pkg.childCategory_name || pkg.name || 'Travel Package';
+        const name = pkg.name || pkg.childCategory_name || 'Travel Package';
         const location = pkg.location || pkg.destination || 'Global';
         const price = pkg.price || 'Contact us';
-        const pkgKey = pkg.childCategory_id || pkg.id;
+        const pkgKey = pkg.id || pkg.childCategory_id;
 
         if (bookingLoading[pkgKey]) return;
 
@@ -146,7 +146,7 @@ _"Making Every Mile Memorable"_`;
             const p2 = childCategoryAPI.getAll().then(res => {
                 if (isMounted && res && res.status === 'success' && Array.isArray(res.data)) {
                     const deletedChildIds = JSON.parse(localStorage.getItem('triplova_deleted_child_category_ids') || '[]');
-                    let sortedData = [...res.data.filter(child => !deletedChildIds.includes(child.childCategory_id))];
+                    let sortedData = [...res.data.filter(child => !deletedChildIds.includes(child.id || child.childCategory_id))];
                     if (sortedData.length > 0 && sortedData[0].created_at) {
                         sortedData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                     } else if (sortedData.length > 0 && (sortedData[0].id || sortedData[0].childCategory_id)) {
@@ -419,29 +419,29 @@ _"Making Every Mile Memorable"_`;
                                 "https://images.unsplash.com/photo-1573843981267-be1999ff37cd?q=80&w=1974&auto=format&fit=crop"  // Villa
                             ];
                             const defaultImg = fallbackImages[idx % fallbackImages.length];
-                            const imgUrl = child.childCategory_image ? (child.childCategory_image.startsWith('http') ? child.childCategory_image : `https://triplova.com/triplova-project/api/admin/${child.childCategory_image}`) : defaultImg;
+                            const imgUrl = (child.image || child.childCategory_image) ? ( (child.image || child.childCategory_image).startsWith('http') ? (child.image || child.childCategory_image) : `https://triplova.com/triplova-project/api/admin/${child.image || child.childCategory_image}`) : defaultImg;
 
                             return (
-                                <div key={child.childCategory_id || idx} className="group relative h-[450px] rounded-3xl overflow-hidden cursor-pointer">
+                                <div key={child.id || child.childCategory_id || idx} className="group relative h-[450px] rounded-3xl overflow-hidden cursor-pointer">
                                     <img 
                                         src={imgUrl} 
-                                        alt={child.childCategory_name} 
+                                        alt={child.name || child.childCategory_name} 
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                                         onError={(e) => { e.target.src = defaultImg; }}
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
                                     <div className="absolute bottom-0 left-0 p-8 w-full">
                                         <span className="bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">Trending</span>
-                                        <h3 className="text-2xl font-bold text-white mb-2 capitalize">{child.childCategory_name}</h3>
-                                        <p className="text-gray-300 text-sm mb-4 line-clamp-2">{child.childCategory_description || 'Experience absolute seclusion in your own private sanctuary.'}</p>
+                                        <h3 className="text-2xl font-bold text-white mb-2 capitalize">{child.name || child.childCategory_name}</h3>
+                                        <p className="text-gray-300 text-sm mb-4 line-clamp-2">{child.description || child.childCategory_description || 'Experience absolute seclusion in your own private sanctuary.'}</p>
                                         <div className="flex justify-between items-center border-t border-white/20 pt-4">
                                             <span className="text-white font-bold text-lg">{child.price || 'Contact'} <span className="text-xs text-gray-400 font-normal">/ person</span></span>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleBooking(child); }}
-                                                disabled={bookingLoading[child.childCategory_id]}
-                                                className={`text-sm font-medium flex items-center gap-1 transition-colors ${bookingLoading[child.childCategory_id] ? 'text-gray-500' : 'text-primary-400 hover:text-primary-300'}`}
+                                                disabled={bookingLoading[child.id || child.childCategory_id]}
+                                                className={`text-sm font-medium flex items-center gap-1 transition-colors ${bookingLoading[child.id || child.childCategory_id] ? 'text-gray-500' : 'text-primary-400 hover:text-primary-300'}`}
                                             >
-                                                {bookingLoading[child.childCategory_id] ? 'Loading...' : 'Book Now'} <ArrowRight className="w-4 h-4" />
+                                                {bookingLoading[child.id || child.childCategory_id] ? 'Loading...' : 'Book Now'} <ArrowRight className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </div>
@@ -559,13 +559,22 @@ _"Making Every Mile Memorable"_`;
                                     }
                                 ];
 
-                                const userAdded = localPackages.map(p => ({
-                                    childCategory_id: p.id || Math.random(),
-                                    childCategory_name: p.name,
-                                    location: p.destination,
-                                    price: p.price,
-                                    childCategory_image: p.image
-                                }));
+                                const userAdded = [
+                                    ...localPackages.map(p => ({
+                                        childCategory_id: p.id || Math.random(),
+                                        name: p.name,
+                                        location: p.destination,
+                                        price: p.price,
+                                        image: p.image
+                                    })),
+                                    ...childCategories.map(c => ({
+                                        childCategory_id: c.id || c.childCategory_id,
+                                        name: c.name || c.childCategory_name,
+                                        location: c.location || c.destination || 'Global',
+                                        price: c.price || 'Contact us',
+                                        image: c.image || c.childCategory_image
+                                    }))
+                                ];
 
                                 const queue = [...userAdded, ...defaultLatest].slice(0, 3);
                                 return queue.map((pkg, idx) => (

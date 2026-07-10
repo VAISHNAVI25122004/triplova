@@ -25,10 +25,11 @@ const PackageCard = ({ pkg, isNewArrival = false }) => {
         setTimeout(() => setToast(null), 6000);
     };
 
-    const imgUrl = pkg.childCategory_image
-        ? (pkg.childCategory_image.startsWith('http') || pkg.childCategory_image.startsWith('blob:')
-            ? pkg.childCategory_image
-            : `https://triplova.com/triplova-project/api/admin/${pkg.childCategory_image}`)
+    const img = pkg.image || pkg.childCategory_image;
+    const imgUrl = img
+        ? (img.startsWith('http') || img.startsWith('blob:')
+            ? img
+            : `https://triplova.com/triplova-project/api/admin/${img}`)
         : "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=500&auto=format&fit=crop&q=60";
 
     // Unified Booking Logic → send WhatsApp via backend + show toast
@@ -50,8 +51,8 @@ const PackageCard = ({ pkg, isNewArrival = false }) => {
         if (isBooking) return;
         setIsBooking(true);
 
-        const name = pkg.childCategory_name || 'Travel Package';
-        const location = pkg.location || 'Global';
+        const name = pkg.name || pkg.childCategory_name || 'Travel Package';
+        const location = pkg.location || pkg.destination || 'Global';
         const price = pkg.price || 'Contact us';
 
         // Show immediate "Pop" message as requested
@@ -120,7 +121,7 @@ _"Making Every Mile Memorable"_`;
                 <div className="relative h-48 overflow-hidden">
                     <img 
                         src={imgUrl} 
-                        alt={pkg.childCategory_name} 
+                        alt={pkg.name || pkg.childCategory_name} 
                         loading="lazy" 
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                         onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=500&auto=format&fit=crop&q=60"; }}
@@ -145,8 +146,8 @@ _"Making Every Mile Memorable"_`;
                         <Map className="w-3.5 h-3.5 mr-1 text-primary-500" />
                         <span>{pkg.location || 'Global Destination'}</span>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 capitalize line-clamp-1" title={pkg.childCategory_name}>
-                        {pkg.childCategory_name}
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 capitalize line-clamp-1" title={pkg.name || pkg.childCategory_name}>
+                        {pkg.name || pkg.childCategory_name}
                     </h3>
                     <div className="flex items-center gap-1 mb-4">
                         {[1, 2, 3, 4, 5].map((s) => (

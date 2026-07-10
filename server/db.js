@@ -8,6 +8,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
     } else {
         console.log('Connected to the SQLite database.');
 
+        // Enable write-ahead logging (WAL) for much better concurrency and performance
+        db.run('PRAGMA journal_mode = WAL;');
+        // Set busy timeout to 5000ms to avoid SQLITE_BUSY under heavy load
+        db.run('PRAGMA busy_timeout = 5000;');
+
         db.run(`CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,

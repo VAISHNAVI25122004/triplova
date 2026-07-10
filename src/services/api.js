@@ -1,5 +1,5 @@
 const BASE_URL = import.meta.env.DEV ? '/triplova-project/api' : 'https://triplova.com/triplova-project/api';
-const CUSTOM_BACKEND_URL = '/api';
+const CUSTOM_BACKEND_URL = import.meta.env.VITE_CUSTOM_BACKEND_URL || '/api';
 export const IMG_BASE = 'https://triplova.com/triplova-project/api/admin/';
 
 // Helper for standard JSON GET requests

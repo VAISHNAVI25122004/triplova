@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { ArrowLeft, ArrowRight, MapPin, Loader2, Package, Star, MessageCircle } from 'lucide-react';
-import { continentsAPI, bookingAPI, whatsappAPI, IMG_BASE } from '../services/api';
+import { childCategoryAPI, bookingAPI, whatsappAPI, IMG_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { Heart } from 'lucide-react';
@@ -37,10 +37,13 @@ const ChildCategoryPackages = () => {
             try {
                 setLoading(true);
                 setError(null);
-                // Now fetching by child category
-                const res = await continentsAPI.getByChildCategory(childCategoryName);
+                // Fetch from childCategoryAPI and filter by name
+                const res = await childCategoryAPI.getAll();
                 if (res && res.status === 'success' && Array.isArray(res.data)) {
-                    setPackages(res.data);
+                    const filtered = res.data.filter(pkg => 
+                        (pkg.name || pkg.childCategory_name || '').toLowerCase() === childCategoryName?.toLowerCase()
+                    );
+                    setPackages(filtered);
                 } else {
                     setPackages([]);
                 }

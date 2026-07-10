@@ -19,9 +19,9 @@ export const AuthProvider = ({ children }) => {
     const [tempData, setTempData] = useState({ name: '', email: '', phone: '' });
     const [error, setError] = useState('');
 
-    // Use 127.0.0.1 to avoid potential localhost resolution issues on some machines
-    const API_URL = 'http://127.0.0.1:5001/api/auth';
-    const WHATSAPP_API = 'http://127.0.0.1:5001/api/whatsapp';
+    const BACKEND_BASE = import.meta.env.VITE_CUSTOM_BACKEND_URL || 'http://127.0.0.1:5001/api';
+    const API_URL = `${BACKEND_BASE}/auth`;
+    const WHATSAPP_API = `${BACKEND_BASE}/whatsapp`;
 
     // Track user state via Firebase
     useEffect(() => {
