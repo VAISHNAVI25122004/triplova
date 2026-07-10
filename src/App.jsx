@@ -26,8 +26,11 @@ import PlaceholderPage from './pages/PlaceholderPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
+  // Dynamically set basename depending on whether it's GitHub Pages or Vercel
+  const basename = window.location.pathname.startsWith('/triplova') ? '/triplova' : '';
+
   return (
-    <Router basename="/triplova">
+    <Router basename={basename}>
       <AuthProvider>
         <WishlistProvider>
           <Routes>
