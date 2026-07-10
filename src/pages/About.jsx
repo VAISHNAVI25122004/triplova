@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Target, Users, Globe, Shield } from 'lucide-react';
@@ -120,9 +121,9 @@ const About = () => {
                 <div className="max-w-4xl mx-auto px-4">
                     <h2 className="text-2xl font-bold mb-4">Ready to start your journey?</h2>
                     <p className="text-gray-400 mb-8">Join thousands of happy travelers who trust Triplova.</p>
-                    <a href="/" className="inline-block bg-primary-600 text-white font-bold py-3 px-8 rounded-full hover:bg-primary-700 transition-colors">
+                    <Link to="/" className="inline-block bg-primary-600 text-white font-bold py-3 px-8 rounded-full hover:bg-primary-700 transition-colors">
                         Explore Destinations
-                    </a>
+                    </Link>
                 </div>
             </section>
             <Footer />

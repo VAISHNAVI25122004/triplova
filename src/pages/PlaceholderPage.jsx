@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -14,7 +15,7 @@ const PlaceholderPage = ({ title }) => {
                 </p>
                 <div className="w-24 h-1 bg-primary-500 rounded-full mb-8"></div>
                 <p className="text-gray-500">
-                    In the meantime, explore our <a href="/" className="text-primary-600 hover:underline">popular destinations</a>.
+                    In the meantime, explore our <Link to="/" className="text-primary-600 hover:underline">popular destinations</Link>.
                 </p>
             </div>
             <Footer />

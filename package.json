@@ -9,7 +9,7 @@
     "backend": "node server/cluster.js",
     "backend-dev": "node --watch server/server.js",
     "dev:all": "concurrently \"npm run db-server\" \"npm run backend\" \"npm run dev\"",
-    "build": "vite build",
+    "build": "vite build && node -e \"require('fs').copyFileSync('dist/index.html', 'dist/404.html')\"",
     "lint": "eslint .",
     "preview": "vite preview"
   },
